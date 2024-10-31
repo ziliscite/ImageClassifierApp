@@ -68,6 +68,8 @@ fun ResultScreen(
             modifier = Modifier
                 .padding(12.dp)
                 .fillMaxSize()
+                .statusBarsPadding()
+                .windowInsetsPadding(insets = WindowInsets.safeDrawing)
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {

@@ -71,4 +71,5 @@ dependencies {
 
     implementation(libs.androidx.exifinterface)
     implementation(libs.text.recognition)
+    implementation(libs.translate)
 }
