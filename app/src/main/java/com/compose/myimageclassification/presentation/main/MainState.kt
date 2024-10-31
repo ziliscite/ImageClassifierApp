@@ -4,7 +4,7 @@ import android.net.Uri
 
 data class MainState(
     var isLoading: Boolean = false,
-    var response: String = "",
+    var classificationResponse: String = "",
     var imageUri: Uri? = null,
     var showImage: Boolean = false
 )

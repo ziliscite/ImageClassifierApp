@@ -54,7 +54,7 @@ fun Bitmap.getRotatedBitmap(file: File): Bitmap? {
     val orientation = ExifInterface(file).getAttributeInt(
         ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_UNDEFINED
     )
-
+    
     return when (orientation) {
         ExifInterface.ORIENTATION_ROTATE_90 -> rotateImage(this, 90F)
         ExifInterface.ORIENTATION_ROTATE_180 -> rotateImage(this, 180F)

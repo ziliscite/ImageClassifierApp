@@ -7,11 +7,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Button
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
@@ -30,17 +34,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.compose.myimageclassification.R
 import com.compose.myimageclassification.presentation.common.PermissionHandler
-import com.compose.myimageclassification.presentation.main.components.ImageFromLocalUri
+import com.compose.myimageclassification.presentation.common.ImageFromLocalUri
 import com.compose.myimageclassification.utils.getImageUri
-import com.compose.myimageclassification.utils.launchGallery
-import com.compose.myimageclassification.utils.launchCamera
+import com.compose.myimageclassification.presentation.common.launchGallery
+import com.compose.myimageclassification.presentation.common.launchCamera
 
 
 @Composable
 fun MainScreen(
     modifier: Modifier = Modifier,
     state: MainState,
-    onEvent: (MainEvent) -> Unit
+    onEvent: (MainEvent) -> Unit,
+    onNavigate: (Uri) -> Unit
 ) {
     val context = LocalContext.current
     var hasPermission by remember {
@@ -74,6 +79,8 @@ fun MainScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .statusBarsPadding()
+            .windowInsetsPadding(insets = WindowInsets.safeDrawing)
             .padding(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
@@ -91,7 +98,6 @@ fun MainScreen(
             }
         }
 
-        // Row with Gallery, Camera, and CameraX Buttons
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -113,39 +119,54 @@ fun MainScreen(
             Button(
                 onClick = {
                     onEvent(MainEvent.ShowImage(false))
-                    onEvent(MainEvent.GetUri(getImageUri(context)))
-                    cameraLauncher.invoke(state.imageUri as Uri)
+
+                    val newUri = getImageUri(context)
+                    onEvent(MainEvent.GetUri(newUri))
+
+                    cameraLauncher.invoke(newUri)
                 },
                 modifier = Modifier.weight(1f)
             ) {
                 Text(text = stringResource(id = R.string.camera))
             }
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            // Upload Button
+            Button(
+                onClick = {
+                    onEvent(MainEvent.UploadImage(context, state.imageUri))
+                },
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(text = stringResource(id = R.string.upload))
+            }
 
             Spacer(modifier = Modifier.width(8.dp))
 
+            // Analyze Button
             Button(
-                onClick = { /* TODO: Handle cameraX click */ },
+                onClick = {
+                    state.imageUri?.let {
+                        onNavigate(it)
+                    } ?: onEvent(MainEvent.AddSideEffect("Please select an image"))
+                },
                 modifier = Modifier.weight(1f)
             ) {
-                Text(text = stringResource(id = R.string.camera_x))
+                Text(text = stringResource(id = R.string.analyze))
             }
         }
 
-        // Upload Button
-        Button(
-            onClick = {
-                onEvent(MainEvent.UploadImage(context, state.imageUri))
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp)
-        ) {
-            Text(text = stringResource(id = R.string.upload))
-        }
+        Spacer(modifier = Modifier.height(3.dp))
 
         // Result TextView
         Text(
-            text = state.response,
+            text = state.classificationResponse,
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center,

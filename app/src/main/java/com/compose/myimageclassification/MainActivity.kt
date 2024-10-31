@@ -1,24 +1,33 @@
 package com.compose.myimageclassification
 
+import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.tooling.preview.Preview
 import com.compose.myimageclassification.presentation.main.MainEvent
 import com.compose.myimageclassification.presentation.main.MainScreen
 import com.compose.myimageclassification.presentation.main.MainViewModel
+import com.compose.myimageclassification.presentation.result.ResultScreen
+import com.compose.myimageclassification.presentation.result.ResultViewModel
 import com.compose.myimageclassification.ui.theme.MyImageClassificationTheme
 
 class MainActivity : ComponentActivity() {
@@ -27,31 +36,69 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MyImageClassificationTheme {
-                val viewModel = MainViewModel()
-                MainContent(viewModel)
+                val mainViewModel = MainViewModel()
+                val resultViewModel = ResultViewModel()
+
+                MainContent(mainViewModel, resultViewModel)
             }
         }
     }
 }
 
-@Composable
-fun MainContent(viewModel: MainViewModel) {
-    val context = LocalContext.current
-    val state by viewModel.classification.collectAsState()
-    val sideEffect by viewModel.sideEffect.collectAsState()
+sealed class Screen {
+    data object Main : Screen()
+    data class Result(val uri: Uri) : Screen()
+}
 
-    Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+@Composable
+fun MainContent(
+    homeViewModel: MainViewModel,
+    resultViewModel: ResultViewModel
+) {
+    val context = LocalContext.current
+
+    var currentScreen by remember {
+        mutableStateOf<Screen>(Screen.Main)
+    }
+
+    val mainState by homeViewModel.classification.collectAsState()
+    val sideEffect by homeViewModel.sideEffect.collectAsState()
+
+    val resultState by resultViewModel.classification.collectAsState()
+
+    Scaffold(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .windowInsetsPadding(insets = WindowInsets.safeDrawing)
+    ) { innerPadding ->
         sideEffect?.let {
             LaunchedEffect(it) {
                 Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-                viewModel.onEvent(MainEvent.RemoveSideEffect)
+                homeViewModel.onEvent(MainEvent.RemoveSideEffect)
             }
         }
 
-        MainScreen(
-            modifier = Modifier.padding(innerPadding),
-            state = state,
-            onEvent = viewModel::onEvent
-        )
+        when (currentScreen) {
+            is Screen.Main -> {
+                MainScreen(
+                    Modifier.padding(innerPadding),
+                    mainState,
+                    homeViewModel::onEvent
+                ) { uri ->
+                    currentScreen = Screen.Result(uri)
+                }
+            }
+            is Screen.Result -> {
+                val result = currentScreen as Screen.Result
+                ResultScreen(
+                    result.uri,
+                    resultState,
+                    resultViewModel::onEvent
+                ) {
+                    currentScreen = Screen.Main
+                }
+            }
+        }
     }
 }

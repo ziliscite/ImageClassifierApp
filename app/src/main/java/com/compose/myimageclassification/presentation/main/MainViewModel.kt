@@ -2,14 +2,10 @@ package com.compose.myimageclassification.presentation.main
 
 import android.content.Context
 import android.net.Uri
-import android.widget.Toast
-import androidx.compose.runtime.State
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.compose.myimageclassification.data.remote.retrofit.ApiConfig
+import com.compose.myimageclassification.utils.reduceFileImage
 import com.compose.myimageclassification.utils.uriToFile
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -44,7 +40,10 @@ class MainViewModel : ViewModel() {
             is MainEvent.ShowImage -> {
                 _classification.update { it.copy(showImage = event.showImage) }
             }
-            MainEvent.RemoveSideEffect -> {
+            is MainEvent.AddSideEffect -> {
+                _sideEffect.value = event.sideEffect
+            }
+            is MainEvent.RemoveSideEffect -> {
                 _sideEffect.value = null
             }
         }
@@ -52,7 +51,7 @@ class MainViewModel : ViewModel() {
 
     private fun uploadImage(context: Context, currentImageUri: Uri?) {
         currentImageUri?.let { uri ->
-            val imageFile = uriToFile(uri, context)
+            val imageFile = uriToFile(uri, context).reduceFileImage()
 
             _classification.update { it.copy(isLoading = true) }
 
@@ -76,7 +75,7 @@ class MainViewModel : ViewModel() {
                 with(successResponse.data) {
                     _classification.update { state ->
                         state.copy(
-                            response = if (isAboveThreshold == true) {
+                            classificationResponse = if (isAboveThreshold == true) {
                                 _sideEffect.value = successResponse.message.toString()
                                 String.format(locale = Locale.US, "Model is predicted successfully and the confidence score is %.2f%%", confidenceScore)
                             } else {

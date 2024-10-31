@@ -1,4 +1,4 @@
-package com.compose.myimageclassification.presentation.main.components
+package com.compose.myimageclassification.presentation.common
 
 import android.net.Uri
 import androidx.compose.foundation.Image

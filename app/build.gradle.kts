@@ -68,4 +68,7 @@ dependencies {
     implementation(libs.converter.gson)
     implementation(libs.logging.interceptor)
     implementation(libs.androidx.lifecycle.runtime.ktx.v262)
+
+    implementation(libs.androidx.exifinterface)
+    implementation(libs.text.recognition)
 }

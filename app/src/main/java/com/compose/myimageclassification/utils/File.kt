@@ -1,16 +1,28 @@
 package com.compose.myimageclassification.utils
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
 
+private const val MAXIMAL_SIZE = 1000000
 fun File.reduceFileImage(): File {
     val file = this
-    val bitmap = BitmapFactory.decodeFile(file.path)
-
+    val bitmap = BitmapFactory.decodeFile(file.path).getRotatedBitmap(file)
+    var compressQuality = 100
+    var streamLength: Int
+    do {
+        val bmpStream = ByteArrayOutputStream()
+        bitmap?.compress(Bitmap.CompressFormat.JPEG, compressQuality, bmpStream)
+        val bmpPicByteArray = bmpStream.toByteArray()
+        streamLength = bmpPicByteArray.size
+        compressQuality -= 5
+    } while (streamLength > MAXIMAL_SIZE)
+    bitmap?.compress(Bitmap.CompressFormat.JPEG, compressQuality, FileOutputStream(file))
     return file
 }
 
