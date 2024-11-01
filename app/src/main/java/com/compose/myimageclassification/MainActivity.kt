@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -25,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import com.compose.myimageclassification.presentation.camera.CameraScreen
 import com.compose.myimageclassification.presentation.main.MainEvent
 import com.compose.myimageclassification.presentation.main.MainScreen
 import com.compose.myimageclassification.presentation.main.MainViewModel
@@ -49,6 +49,7 @@ class MainActivity : ComponentActivity() {
 
 sealed class Screen {
     data object Main : Screen()
+    data object Camera : Screen()
     data class Result(val uri: Uri) : Screen()
 }
 
@@ -87,7 +88,10 @@ fun MainContent(
                 MainScreen(
                     Modifier.padding(innerPadding),
                     mainState,
-                    homeViewModel::onEvent
+                    homeViewModel::onEvent,
+                    onNavigateToCamera = {
+                        currentScreen = Screen.Camera
+                    }
                 ) { uri ->
                     currentScreen = Screen.Result(uri)
                 }
@@ -99,6 +103,11 @@ fun MainContent(
                     resultState,
                     resultViewModel::onEvent
                 ) {
+                    currentScreen = Screen.Main
+                }
+            }
+            is Screen.Camera -> {
+                CameraScreen {
                     currentScreen = Screen.Main
                 }
             }

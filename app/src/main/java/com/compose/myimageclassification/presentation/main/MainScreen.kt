@@ -7,15 +7,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Button
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
@@ -45,7 +41,8 @@ fun MainScreen(
     modifier: Modifier = Modifier,
     state: MainState,
     onEvent: (MainEvent) -> Unit,
-    onNavigate: (Uri) -> Unit
+    onNavigateToCamera: () -> Unit,
+    onNavigateToResult: (Uri) -> Unit
 ) {
     val context = LocalContext.current
     var hasPermission by remember {
@@ -127,6 +124,17 @@ fun MainScreen(
             ) {
                 Text(text = stringResource(id = R.string.camera))
             }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Button(
+                onClick = {
+                    onNavigateToCamera()
+                },
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(text = stringResource(id = R.string.camera_x))
+            }
         }
 
         Row(
@@ -151,7 +159,7 @@ fun MainScreen(
             Button(
                 onClick = {
                     state.imageUri?.let {
-                        onNavigate(it)
+                        onNavigateToResult(it)
                     } ?: onEvent(MainEvent.AddSideEffect("Please select an image"))
                 },
                 modifier = Modifier.weight(1f)
