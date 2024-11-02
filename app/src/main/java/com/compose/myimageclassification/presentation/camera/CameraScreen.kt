@@ -16,8 +16,6 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import android.widget.Toast
 import androidx.camera.core.ImageAnalysis
@@ -27,9 +25,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -42,6 +38,8 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import com.compose.myimageclassification.presentation.camera.components.ObjectDetectionOverlay
+import org.tensorflow.lite.task.gms.vision.detector.Detection
 import java.text.NumberFormat
 
 @Composable
@@ -64,6 +62,12 @@ fun CameraScreen(
     }
     var inferenceTimeText by remember {
         mutableStateOf("")
+    }
+
+    var imageWidthState by remember { mutableStateOf(0) }
+    var imageHeightState by remember { mutableStateOf(0) }
+    var resultsState: List<Detection> by remember {
+        mutableStateOf(emptyList())
     }
 
     val mlHelper = remember {
@@ -91,17 +95,14 @@ fun CameraScreen(
                 onError = { error -> toastText = error },
                 onResults = { results, inferenceTime, imageHeight, imageWidth ->
                     if (results.isNotEmpty()) {
-                        val builder = StringBuilder()
-                        for (result in results) {
-                            val displayResult = "${result.categories[0].label} " +
-                                    NumberFormat.getPercentInstance()
-                                        .format(result.categories[0].score).trim()
-                            builder.append("$displayResult \n")
-                        }
-                        resultText = builder.toString()
+                        resultsState = results
+                        imageHeightState = imageHeight
+                        imageWidthState = imageWidth
                         inferenceTimeText = "$inferenceTime ms"
                     } else {
-                        resultText = ""
+                        resultsState = emptyList()
+                        imageHeightState = 0
+                        imageWidthState = 0
                         inferenceTimeText = ""
                     }
                 }
@@ -158,17 +159,26 @@ fun CameraScreen(
             modifier = Modifier.fillMaxSize()
         )
 
-        Text(
-            text = resultText,
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color(0xBFFFFFFF))
-                .padding(16.dp)
-                .align(Alignment.BottomCenter),
-            fontSize = 20.sp,
-            color = Color.Black,
-            maxLines = 3
-        )
+        if (!isClassification) {
+            ObjectDetectionOverlay(
+                results = resultsState,
+                imageWidth = imageWidthState,
+                imageHeight = imageHeightState,
+                modifier = Modifier.fillMaxSize()
+            )
+        } else {
+            Text(
+                text = resultText,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xBFFFFFFF))
+                    .padding(16.dp)
+                    .align(Alignment.BottomCenter),
+                fontSize = 20.sp,
+                color = Color.Black,
+                maxLines = 3
+            )
+        }
 
         Text(
             text = inferenceTimeText,

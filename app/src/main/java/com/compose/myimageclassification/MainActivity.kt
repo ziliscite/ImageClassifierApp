@@ -49,7 +49,7 @@ class MainActivity : ComponentActivity() {
 
 sealed class Screen {
     data object Main : Screen()
-    data object Camera : Screen()
+    data class Camera(val isClassification: Boolean) : Screen()
     data class Result(val uri: Uri) : Screen()
 }
 
@@ -90,7 +90,7 @@ fun MainContent(
                     mainState,
                     homeViewModel::onEvent,
                     onNavigateToCamera = {
-                        currentScreen = Screen.Camera
+                        currentScreen = Screen.Camera(it)
                     }
                 ) { uri ->
                     currentScreen = Screen.Result(uri)
@@ -107,7 +107,10 @@ fun MainContent(
                 }
             }
             is Screen.Camera -> {
-                CameraScreen {
+                val camera = currentScreen as Screen.Camera
+                CameraScreen(
+                    isClassification = camera.isClassification
+                ) {
                     currentScreen = Screen.Main
                 }
             }

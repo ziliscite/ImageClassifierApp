@@ -41,7 +41,7 @@ fun MainScreen(
     modifier: Modifier = Modifier,
     state: MainState,
     onEvent: (MainEvent) -> Unit,
-    onNavigateToCamera: () -> Unit,
+    onNavigateToCamera: (Boolean) -> Unit,
     onNavigateToResult: (Uri) -> Unit
 ) {
     val context = LocalContext.current
@@ -124,16 +124,32 @@ fun MainScreen(
             ) {
                 Text(text = stringResource(id = R.string.camera))
             }
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            Button(
+                onClick = {
+                    onNavigateToCamera(true)
+                },
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(text = stringResource(id = R.string.classify_image))
+            }
 
             Spacer(modifier = Modifier.width(8.dp))
 
             Button(
                 onClick = {
-                    onNavigateToCamera()
+                    onNavigateToCamera(false)
                 },
                 modifier = Modifier.weight(1f)
             ) {
-                Text(text = stringResource(id = R.string.camera_x))
+                Text(text = stringResource(id = R.string.detect_object))
             }
         }
 
