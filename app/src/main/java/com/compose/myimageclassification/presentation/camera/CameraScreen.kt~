@@ -43,7 +43,6 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.compose.myimageclassification.domain.ml.ImageClassifierHelper
-import kotlinx.coroutines.delay
 import org.tensorflow.lite.task.gms.vision.classifier.Classifications
 import java.text.NumberFormat
 
