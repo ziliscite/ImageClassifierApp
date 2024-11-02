@@ -42,6 +42,12 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import com.compose.myimageclassification.domain.ml.ImageClassifierHelper
+import com.compose.myimageclassification.domain.ml.ClassifierListener
+import com.compose.myimageclassification.domain.ml.DetectorListener
+import com.compose.myimageclassification.domain.ml.ObjectDetectorHelper
+import org.tensorflow.lite.task.gms.vision.classifier.Classifications
+import org.tensorflow.lite.task.gms.vision.detector.Detection
 import java.text.NumberFormat
 
 @Composable
@@ -66,49 +72,54 @@ fun CameraScreen(
         mutableStateOf("")
     }
 
-    val mlHelper = remember {
-        if (isClassification) {
-            ImageClassifierWrapper(createImageClassifierHelper(
+    if (isClassification) {
+        val imageClassifierHelper = remember {
+            createImageClassifierHelper(
                 context = context,
-                onError = { error -> toastText = error },
-                onResults = { classifications, inferenceTime ->
-                    if (classifications.isNotEmpty() && classifications[0].categories.isNotEmpty()) {
-                        val sortedCategories = classifications[0].categories.sortedByDescending { it.score }
-                        val displayResult = sortedCategories.joinToString("\n") {
-                            "${it.label} " + NumberFormat.getPercentInstance().format(it.score).trim()
-                        }
-                        resultText = displayResult
-                        inferenceTimeText = "$inferenceTime ms"
-                    } else {
-                        resultText = ""
-                        inferenceTimeText = ""
+                onError = { error -> toastText = error }
+            ) { classifications, inferenceTime ->
+                if (classifications.isNotEmpty() && classifications[0].categories.isNotEmpty()) {
+                    val sortedCategories = classifications[0].categories.sortedByDescending { it.score }
+
+                    // Format and display the results
+                    val displayResult = sortedCategories.joinToString("\n") {
+                        "${it.label} " + NumberFormat.getPercentInstance().format(it.score).trim()
                     }
+
+                    resultText = displayResult
+                    inferenceTimeText = "$inferenceTime ms"
+                } else {
+                    resultText = ""
+                    inferenceTimeText = ""
                 }
-            ))
-        } else {
-            ObjectDetectorWrapper(createObjectDetectorHelper(
+            }
+        }
+    } else {
+        val objectDetectorHelper = remember {
+            createObjectDetectorHelper(
                 context = context,
-                onError = { error -> toastText = error },
-                onResults = { results, inferenceTime, imageHeight, imageWidth ->
-                    if (results.isNotEmpty()) {
-                        val builder = StringBuilder()
-                        for (result in results) {
-                            val displayResult = "${result.categories[0].label} " +
-                                    NumberFormat.getPercentInstance()
-                                        .format(result.categories[0].score).trim()
-                            builder.append("$displayResult \n")
-                        }
-                        resultText = builder.toString()
-                        inferenceTimeText = "$inferenceTime ms"
-                    } else {
-                        resultText = ""
-                        inferenceTimeText = ""
+                onError = { error -> toastText = error }
+            ) { results, inferenceTime, imageHeight, imageWidth ->
+                if (results.isNotEmpty() && results[0].categories.isNotEmpty()) {
+                    println(results)
+
+                    val builder = StringBuilder()
+                    for (result in results) {
+                        val displayResult = "${result.categories[0].label} " +
+                                NumberFormat.getPercentInstance()
+                                    .format(result.categories[0].score).trim()
+                        builder.append("$displayResult \n")
                     }
+
+                    resultText = builder.toString()
+                    inferenceTimeText = "$inferenceTime ms"
+                } else {
+                    resultText = ""
+                    inferenceTimeText = ""
                 }
-            ))
+            }
         }
     }
-
     BackHandler {
         onNavigateBack()
     }
@@ -137,7 +148,7 @@ fun CameraScreen(
                         .build()
 
                     imageAnalyzer.setAnalyzer(Executors.newSingleThreadExecutor()) { image ->
-                        mlHelper.processImage(image)
+                        imageClassifierHelper.classifyImage(image)
                     }
 
                     try {
@@ -198,6 +209,55 @@ private fun hideSystemUI(context: Context) {
         controller.hide(WindowInsetsCompat.Type.systemBars())
         controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
     }
+}
+
+// Factory function for ImageClassifierHelper
+fun createImageClassifierHelper(
+    context: Context,
+    onError: (String) -> Unit,
+    onResults: (List<Classifications>, Long) -> Unit
+): ImageClassifierHelper {
+    return ImageClassifierHelper(
+        context = context,
+        classifierListener = object : ClassifierListener {
+            override fun onError(error: String) {
+                onError(error)
+            }
+
+            override fun onResults(results: List<Classifications>?, inferenceTime: Long) {
+                results?.let { classifications ->
+                    onResults(classifications, inferenceTime)
+                }
+            }
+        }
+    )
+}
+
+// Factory function for ObjectDetectorHelper
+fun createObjectDetectorHelper(
+    context: Context,
+    onError: (String) -> Unit,
+    onResults: (List<Detection>, Long, Int, Int) -> Unit
+): ObjectDetectorHelper {
+    return ObjectDetectorHelper(
+        context = context,
+        detectorListener = object : DetectorListener {
+            override fun onError(error: String) {
+                onError(error)
+            }
+
+            override fun onResults(
+                results: MutableList<Detection>?,
+                inferenceTime: Long,
+                imageHeight: Int,
+                imageWidth: Int
+            ) {
+                results?.let {
+                    onResults(it, inferenceTime, imageHeight, imageWidth)
+                }
+            }
+        }
+    )
 }
 
 @androidx.compose.ui.tooling.preview.Preview
