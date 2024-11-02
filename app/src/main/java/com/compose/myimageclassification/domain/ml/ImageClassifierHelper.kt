@@ -7,18 +7,14 @@ import org.tensorflow.lite.support.image.TensorImage
 import org.tensorflow.lite.support.image.ops.ResizeOp
 import org.tensorflow.lite.task.core.BaseOptions
 import org.tensorflow.lite.task.core.vision.ImageProcessingOptions
-import org.tensorflow.lite.task.gms.vision.classifier.Classifications
 import org.tensorflow.lite.task.gms.vision.classifier.ImageClassifier
 import android.content.Context
-import android.graphics.Bitmap
 import android.os.Build
 import android.os.SystemClock
 import android.util.Log
 import android.view.Surface
 import androidx.camera.core.ImageProxy
 import com.compose.myimageclassification.R
-import com.google.android.gms.tflite.client.TfLiteInitializationOptions
-import com.google.android.gms.tflite.gpu.support.TfLiteGpu
 import org.tensorflow.lite.gpu.CompatibilityList
 import org.tensorflow.lite.task.gms.vision.TfLiteVision
 
@@ -32,17 +28,11 @@ class ImageClassifierHelper(
     private var imageClassifier: ImageClassifier? = null
 
     init {
-        TfLiteGpu.isGpuDelegateAvailable(context).onSuccessTask { gpuAvailable ->
-            val optionsBuilder = TfLiteInitializationOptions.builder()
-            if (gpuAvailable) {
-                optionsBuilder.setEnableGpuDelegateSupport(true)
-            }
-            TfLiteVision.initialize(context, optionsBuilder.build())
-        }.addOnSuccessListener {
+        initializeTfLite(context, {
             setupImageClassifier()
-        }.addOnFailureListener {
+        }, {
             classifierListener?.onError(context.getString(R.string.tflitevision_is_not_initialized_yet))
-        }
+        })
     }
 
     private fun setupImageClassifier() {
@@ -99,21 +89,11 @@ class ImageClassifierHelper(
         var inferenceTime = SystemClock.uptimeMillis()
         val results = imageClassifier?.classify(tensorImage, imageProcessingOptions)
         inferenceTime = SystemClock.uptimeMillis() - inferenceTime
+
         classifierListener?.onResults(
             results,
             inferenceTime
         )
-    }
-
-    private fun toBitmap(image: ImageProxy): Bitmap {
-        val bitmapBuffer = Bitmap.createBitmap(
-            image.width,
-            image.height,
-            Bitmap.Config.ARGB_8888
-        )
-        image.use { bitmapBuffer.copyPixelsFromBuffer(image.planes[0].buffer) }
-        image.close()
-        return bitmapBuffer
     }
 
     private fun getOrientationFromRotation(rotation: Int): ImageProcessingOptions.Orientation {
@@ -123,14 +103,6 @@ class ImageClassifierHelper(
             Surface.ROTATION_90 -> ImageProcessingOptions.Orientation.TOP_LEFT
             else -> ImageProcessingOptions.Orientation.RIGHT_TOP
         }
-    }
-
-    interface ClassifierListener {
-        fun onError(error: String)
-        fun onResults(
-            results: List<Classifications>?,
-            inferenceTime: Long
-        )
     }
 
     companion object {

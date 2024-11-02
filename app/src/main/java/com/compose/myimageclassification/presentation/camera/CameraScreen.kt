@@ -43,7 +43,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.compose.myimageclassification.domain.ml.ImageClassifierHelper
-import kotlinx.coroutines.delay
+import com.compose.myimageclassification.domain.ml.ClassifierListener
 import org.tensorflow.lite.task.gms.vision.classifier.Classifications
 import java.text.NumberFormat
 
@@ -71,7 +71,7 @@ fun CameraScreen(
     val imageClassifierHelper = remember {
         ImageClassifierHelper(
             context = context,
-            classifierListener = object : ImageClassifierHelper.ClassifierListener {
+            classifierListener = object : ClassifierListener {
                 override fun onError(error: String) {
                     toastText = error
                 }
